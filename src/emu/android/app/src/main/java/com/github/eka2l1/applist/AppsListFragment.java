@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-
+private boolean hasAutoBootedShell = false;
 package com.github.eka2l1.applist;
 
 import android.annotation.SuppressLint;
@@ -232,10 +232,21 @@ public class AppsListFragment extends Fragment {
                 .subscribeWith(new DisposableSingleObserver<ArrayList<AppItem>>() {
                     @Override
                     public void onSuccess(@NonNull ArrayList<AppItem> appItems) {
-                        adapter.setItems(appItems);
-                        dialog.cancel();
-                    }
-
+                        adapter.setItems
+                            // Auto-boot the Nokia 5800 S60v5 Shell once firmware is mounted
+if (!hasAutoBootedShell && items != null && !items.isEmpty()) {
+    for (AppItem item : items) {
+        // 0x101F4CD2L = S60v5 MatrixMenu.exe | 0x102750F0L = S60v5 Active Idle
+        if (item.getUid() == 0x101F4CD2L || item.getName().equalsIgnoreCase("Menu")) {
+            hasAutoBootedShell = true;
+            Intent intent = new Intent(getContext(), EmulatorActivity.class);
+            intent.putExtra("app_uid", item.getUid());
+            intent.putExtra("app_name", item.getName());
+            startActivity(intent);
+            break;
+        }
+    }
+}
                     @Override
                     public void onError(@NonNull Throwable e) {
                         Toast.makeText(getContext(), R.string.no_devices_found, Toast.LENGTH_SHORT).show();
